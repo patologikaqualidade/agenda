@@ -116,7 +116,17 @@ function bindCalendarDays(){
 }
 
 function showDayAppointments(dateStr){
-  const dayAppointments = state.appointments.filter(a => a.data_agendamento === dateStr).sort((a,b) => a.horario.localeCompare(b.horario));
+  const formatTime = (h) => {
+    if (!h) return '-';
+    if (typeof h === 'number' && h < 1) {
+      const totalSeconds = h * 86400;
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      return String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+    }
+    return String(h).substring(0, 5);
+  };
+  const dayAppointments = state.appointments.filter(a => a.data_agendamento === dateStr).sort((a,b) => String(a.horario).localeCompare(String(b.horario)));
   
   if(dayAppointments.length === 0){
     toast('Nenhum agendamento para este dia','info');
@@ -128,7 +138,7 @@ function showDayAppointments(dateStr){
   dayAppointments.forEach((apt, idx) => {
     modalHTML += '<div style="border:1px solid #1e2632;border-radius:6px;padding:16px;margin-bottom:16px;background:#0a0d12">';
     modalHTML += '<div style="display:grid;gap:8px;font-size:14px">';
-    modalHTML += '<div><span style="color:#9ca3af">Horário do exame:</span> <strong>' + apt.horario + '</strong></div>';
+    modalHTML += '<div><span style="color:#9ca3af">Horário do exame:</span> <strong>' + formatTime(apt.horario) + '</strong></div>';
     modalHTML += '<div><span style="color:#9ca3af">Nome do hospital:</span> <strong>' + getName(state.lookups.hospitais, apt.hospital_id, 'hospital_id', 'nome_hospital') + '</strong></div>';
     modalHTML += '<div><span style="color:#9ca3af">Nome do médico:</span> <strong>' + getName(state.lookups.medicos, apt.medico_id, 'medico_id', 'nome_medico') + '</strong></div>';
     modalHTML += '<div><span style="color:#9ca3af">Paciente:</span> <strong>' + apt.paciente + '</strong></div>';
@@ -147,7 +157,19 @@ function showDayAppointments(dateStr){
   document.getElementById('agendmentModal').onclick=(e)=>{if(e.target.id==='agendmentModal') document.getElementById('agendmentModal').remove();};
 }
 
-function appointments(){return `<div class="top"><div><h1 class="page-title">Lista de agendamentos</h1><p class="page-sub">Visualize, edite ou exclua registros.</p></div><button class="btn btn-primary" data-nav="new">+ Novo agendamento</button></div><div class="card table-wrap"><table><thead><tr><th>Data/Hora</th><th>Paciente</th><th>Hospital</th><th>Médico</th><th>Procedimento</th><th>Status</th><th>Ações</th></tr></thead><tbody>${state.appointments.map(a=>`<tr><td>${a.data_agendamento} ${a.horario}</td><td>${a.paciente}</td><td>${getName(state.lookups.hospitais,a.hospital_id,'hospital_id','nome_hospital')}</td><td>${getName(state.lookups.medicos,a.medico_id,'medico_id','nome_medico')}</td><td>${getName(state.lookups.procedimentos,a.procedimento_id,'procedimento_id','nome_procedimento')}</td><td><span class="badge ${statusClass(a.status_id)}">${getName(state.lookups.status,a.status_id,'status_id','nome_status')}</span></td><td><div class="actions"><button class="btn" data-edit="${a.agendamento_id}">✏️</button><button class="btn btn-danger" data-del="${a.agendamento_id}">🗑️</button></div></td></tr>`).join('')}</tbody></table></div>`}
+function appointments(){
+  const formatTime = (h) => {
+    if (!h) return '-';
+    if (typeof h === 'number' && h < 1) {
+      const totalSeconds = h * 86400;
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      return String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+    }
+    return String(h).substring(0, 5);
+  };
+  return `<div class="top"><div><h1 class="page-title">Lista de agendamentos</h1><p class="page-sub">Visualize, edite ou exclua registros.</p></div><button class="btn btn-primary" data-nav="new">+ Novo agendamento</button></div><div class="card table-wrap"><table><thead><tr><th>Data/Hora</th><th>Paciente</th><th>Hospital</th><th>Médico</th><th>Procedimento</th><th>Status</th><th>Ações</th></tr></thead><tbody>${state.appointments.map(a=>`<tr><td>${a.data_agendamento} ${formatTime(a.horario)}</td><td>${a.paciente}</td><td>${getName(state.lookups.hospitais,a.hospital_id,'hospital_id','nome_hospital')}</td><td>${getName(state.lookups.medicos,a.medico_id,'medico_id','nome_medico')}</td><td>${getName(state.lookups.procedimentos,a.procedimento_id,'procedimento_id','nome_procedimento')}</td><td><span class="badge ${statusClass(a.status_id)}">${getName(state.lookups.status,a.status_id,'status_id','nome_status')}</span></td><td><div class="actions"><button class="btn" data-edit="${a.agendamento_id}">✏️</button><button class="btn btn-danger" data-del="${a.agendamento_id}">🗑️</button></div></td></tr>`).join('')}</tbody></table></div>`}
+
 
 function renderCalendar(){
   const year = state.calendarYear;

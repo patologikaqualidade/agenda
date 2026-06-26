@@ -84,9 +84,69 @@ function renderShell(page){
   }
 }
 
-function dashboard(){const total=state.appointments.length, canc=state.appointments.filter(a=>a.status_id==='ST004').length, reag=state.appointments.filter(a=>a.reagendamento==='SIM').length; return `<div class="top"><div><h1 class="page-title">Dashboard de indicadores</h1><p class="page-sub">Visão geral da unidade selecionada.</p></div></div><div class="grid grid-4"><div class="card kpi"><div class="label">Total</div><div class="num">${total}</div></div><div class="card kpi"><div class="label">Realizados</div><div class="num">${state.appointments.filter(a=>a.status_id==='ST003').length}</div></div><div class="card kpi"><div class="label">Cancelados</div><div class="num status-bad">${canc}</div></div><div class="card kpi"><div class="label">Reagendados</div><div class="num status-alert">${reag}</div></div></div><div class="grid grid-2" style="margin-top:16px"><div class="card kpi"><h3>Agendamentos por status</h3><div class="donut"><div>${total}<br><span class="muted">Total</span></div></div></div><div class="card kpi"><h3>Agendamentos por hospital</h3><div class="chart-fake"><div class="bar" style="height:70%"></div><div class="bar" style="height:48%"></div><div class="bar" style="height:28%"></div><div class="bar" style="height:18%"></div></div></div></div>`}
+function dashboard(){
+  const total=state.appointments.length, canc=state.appointments.filter(a=>a.status_id==='ST004').length, reag=state.appointments.filter(a=>a.reagendamento==='SIM').length;
+  return `<div class="top"><div><h1 class="page-title">Dashboard de indicadores</h1><p class="page-sub">Visão geral da unidade selecionada.</p></div></div><div class="grid grid-4"><div class="card kpi"><div class="label">Total</div><div class="num">${total}</div></div><div class="card kpi"><div class="label">Realizados</div><div class="num">${state.appointments.filter(a=>a.status_id==='ST003').length}</div></div><div class="card kpi"><div class="label">Cancelados</div><div class="num status-bad">${canc}</div></div><div class="card kpi"><div class="label">Reagendados</div><div class="num status-alert">${reag}</div></div></div><div class="grid grid-2" style="margin-top:16px"><div class="card kpi"><h3>Agendamentos por status</h3><div class="donut"><div>${total}<br><span class="muted">Total</span></div></div></div><div class="card kpi"><h3>Agendamentos por hospital</h3><div class="chart-fake"><div class="bar" style="height:70%"></div><div class="bar" style="height:48%"></div><div class="bar" style="height:28%"></div><div class="bar" style="height:18%"></div></div></div></div><div style="margin-top:24px">${renderCalendar()}</div>`;
+}
 
 function appointments(){return `<div class="top"><div><h1 class="page-title">Lista de agendamentos</h1><p class="page-sub">Visualize, edite ou exclua registros.</p></div><button class="btn btn-primary" data-nav="new">+ Novo agendamento</button></div><div class="card table-wrap"><table><thead><tr><th>Data/Hora</th><th>Paciente</th><th>Hospital</th><th>Médico</th><th>Procedimento</th><th>Status</th><th>Ações</th></tr></thead><tbody>${state.appointments.map(a=>`<tr><td>${a.data_agendamento} ${a.horario}</td><td>${a.paciente}</td><td>${getName(state.lookups.hospitais,a.hospital_id,'hospital_id','nome_hospital')}</td><td>${getName(state.lookups.medicos,a.medico_id,'medico_id','nome_medico')}</td><td>${getName(state.lookups.procedimentos,a.procedimento_id,'procedimento_id','nome_procedimento')}</td><td><span class="badge ${statusClass(a.status_id)}">${getName(state.lookups.status,a.status_id,'status_id','nome_status')}</span></td><td><div class="actions"><button class="btn" data-edit="${a.agendamento_id}">✏️</button><button class="btn btn-danger" data-del="${a.agendamento_id}">🗑️</button></div></td></tr>`).join('')}</tbody></table></div>`}
+
+function renderCalendar(){
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  const startingDayOfWeek = firstDay.getDay();
+  
+  const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+  
+  let calendarHTML = `<div class="card" style="padding:20px;background:#0f1419;border:1px solid #1e2632">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h3 style="margin:0">${monthNames[month]} ${year}</h3>
+      <div style="display:flex;gap:12px;font-size:12px">
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#22c55e;border-radius:3px"></div><span>Agendamento</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#ef4444;border-radius:3px"></div><span>Bloqueado</span></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">`;
+  
+  // Days of week headers
+  dayNames.forEach(day => {
+    calendarHTML += `<div style="text-align:center;padding:10px;font-weight:bold;font-size:12px;color:#9ca3af;border-bottom:1px solid #1e2632">${day}</div>`;
+  });
+  
+  // Empty cells for days before month starts
+  for (let i = 0; i < startingDayOfWeek; i++) {
+    calendarHTML += `<div style="padding:10px;background:#0a0d12;border:1px solid #1e2632"></div>`;
+  }
+  
+  // Days of month
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = \`\${year}-\${String(month + 1).padStart(2, '0')}-\${String(day).padStart(2, '0')}\`;
+    const hasAppointment = state.appointments.some(a => a.data_agendamento === dateStr);
+    const isBlocked = state.blocked.some(b => dateStr >= b.data_inicio && dateStr <= b.data_fim);
+    
+    let bgColor = '#0a0d12';
+    let borderColor = '#1e2632';
+    let textColor = '#e5e7eb';
+    
+    if (isBlocked) {
+      bgColor = '#7f1d1d';
+      borderColor = '#dc2626';
+    } else if (hasAppointment) {
+      bgColor = '#064e3b';
+      borderColor = '#22c55e';
+    }
+    
+    calendarHTML += \`<div style="padding:10px;background:\${bgColor};border:1px solid \${borderColor};text-align:center;border-radius:4px;cursor:pointer;font-weight:500;color:\${textColor};\${isBlocked ? 'opacity:0.7;' : ''}font-size:13px">\${day}</div>\`;
+  }
+  
+  calendarHTML += `</div></div>`;
+  return calendarHTML;
+}
 
 function bindAppointments(){document.querySelectorAll('[data-nav="new"]').forEach(b=>b.onclick=()=>renderShell('new')); document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{const a=state.appointments.find(x=>x.agendamento_id===b.dataset.edit); document.getElementById('view').innerHTML=formAppointment(a); bindForm(a);}); document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(confirm('Excluir agendamento?')){try{await api('deleteAppointment',{agendamento_id:b.dataset.del,user_id:state.user.user_id}); await loadBase(); renderShell('appointments'); toast('Agendamento excluído','success')}catch(err){toast(err.message,'danger')}}})}
 

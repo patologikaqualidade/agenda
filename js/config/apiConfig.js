@@ -1,5 +1,5 @@
 // Cole aqui a URL do seu Web App do Google Apps Script após o deploy.
-export const API_URL = 'https://script.google.com/macros/library/d/15-9EZzSMkkTDdz5Li50Al-oLBYwA133TFrjc70tROp-sN7378hY3_9iQ/2';
+export const API_URL = 'https://script.google.com/macros/s/AKfycbz-TbJwKmtuHy3MfstK9Nbs1vQ4SLR2eT6MfzUHUSc5urdL7q-7N07Fpas5WYM6mNG-/exec';
 
 export const SHEETS = {
   organizations:'Organizations', unidades:'Unidades', users:'Users', usuariosUnidades:'UsuariosUnidades',

@@ -109,6 +109,10 @@ function bindSettings(){
   document.querySelectorAll('[data-config]').forEach(b=>b.onclick=()=>{
     const cfg=b.dataset.config;
     const view=document.getElementById('view');
+    if(cfg==='usuarios'){
+      view.innerHTML=settingsUsuarios();
+      bindSettingsUsuarios();
+    }
     if(cfg==='hospitais'){
       view.innerHTML=settingsHospitais();
       bindSettingsHospitais();
@@ -136,6 +140,93 @@ function bindSettings(){
     if(cfg==='configAgenda'){
       view.innerHTML=settingsConfigAgenda();
       bindSettingsConfigAgenda();
+    }
+  });
+}
+
+// ========== SETTINGS USUÁRIOS ==========
+function settingsUsuarios(){
+  const usuarios = state.lookups.usuarios || [];
+  return `<div class="top"><div><h1 class="page-title">Cadastro de Usuários</h1><p class="page-sub">Adicione, edite ou remova usuários do sistema.</p></div><button class="btn" data-back-settings>← Voltar</button></div>
+    <form id="usuarioForm" class="card" style="padding:18px;margin-bottom:16px">
+      <div class="form-grid">
+        <input id="usuarioId" hidden>
+        <label>Nome<input class="input" id="usuarioNome" placeholder="Ex: João Silva" required></label>
+        <label>Email<input class="input" type="email" id="usuarioEmail" placeholder="joao@example.com" required></label>
+        <label>Senha<input class="input" type="password" id="usuarioSenha" placeholder="Deixe em branco para não alterar"></label>
+        <label>Status<select class="select" id="usuarioAtivo"><option value="SIM">Ativo</option><option value="NAO">Inativo</option></select></label>
+      </div>
+      <button class="btn btn-primary" style="margin-top:14px">Salvar Usuário</button>
+    </form>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>Email</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody>${usuarios.map(u=>`<tr>
+          <td>${u.nome}</td>
+          <td>${u.email}</td>
+          <td><span class="badge ${u.ativo==='SIM'?'b-green':'b-red'}">${u.ativo==='SIM'?'Ativo':'Inativo'}</span></td>
+          <td><button class="btn" data-edit-user="${u.user_id}">✏️</button> <button class="btn btn-danger" data-del-user="${u.user_id}">🗑️</button></td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function bindSettingsUsuarios(){
+  document.querySelector('[data-back-settings]').onclick=()=>renderShell('settings');
+  
+  document.getElementById('usuarioForm').onsubmit=async e=>{
+    e.preventDefault();
+    const userId = document.getElementById('usuarioId').value;
+    const p={
+      user_id:userId||'',
+      nome:document.getElementById('usuarioNome').value,
+      email:document.getElementById('usuarioEmail').value,
+      org_id:state.user.org_id,
+      ativo:document.getElementById('usuarioAtivo').value
+    };
+    
+    const senha = document.getElementById('usuarioSenha').value;
+    if(senha) p.senha_hash = senha;
+    
+    try{
+      await api('saveUser',p);
+      await loadBase();
+      const view=document.getElementById('view');
+      view.innerHTML=settingsUsuarios();
+      bindSettingsUsuarios();
+      toast('Usuário salvo','success');
+      document.getElementById('usuarioForm').reset();
+      document.getElementById('usuarioId').value='';
+    }catch(err){
+      toast(err.message,'danger');
+    }
+  };
+  
+  document.querySelectorAll('[data-edit-user]').forEach(b=>b.onclick=()=>{
+    const u=state.lookups.usuarios.find(x=>x.user_id===b.dataset.editUser);
+    document.getElementById('usuarioId').value=u.user_id;
+    document.getElementById('usuarioNome').value=u.nome;
+    document.getElementById('usuarioEmail').value=u.email;
+    document.getElementById('usuarioAtivo').value=u.ativo;
+    document.getElementById('usuarioSenha').value='';
+  });
+  
+  document.querySelectorAll('[data-del-user]').forEach(b=>b.onclick=async()=>{
+    if(confirm('Deletar este usuário?')){
+      try{
+        await api('saveUser',{
+          user_id:b.dataset.delUser,
+          ativo:'NAO',
+          org_id:state.user.org_id
+        });
+        await loadBase();
+        const view=document.getElementById('view');
+        view.innerHTML=settingsUsuarios();
+        bindSettingsUsuarios();
+        toast('Usuário deletado','success');
+      }catch(err){
+        toast(err.message,'danger');
+      }
     }
   });
 }

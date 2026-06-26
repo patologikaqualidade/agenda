@@ -62,6 +62,8 @@ async function loadBase(){
   state.lookups = lookupsRes;
   state.appointments = appointmentsRes.agendamentos;
   state.blocked = blockedRes.bloqueios;
+  console.log('DEBUG - Primeiro appt:', state.appointments[0]);
+  if(state.appointments[0]) console.log('DEBUG - Horário value:', state.appointments[0].horario, '| Tipo:', typeof state.appointments[0].horario);
 }
 
 function shellContent(page){return `<div class="shell"><aside class="sidebar"><div class="brand"><div class="brand-mark">D</div> Delfos</div><div class="muted" style="margin-bottom:18px">${state.user.nome}<br>${state.unit.nome_unidade}</div><nav class="nav">

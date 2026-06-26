@@ -105,6 +105,46 @@ function bindDashboard(){
     document.getElementById('view').innerHTML=dashboard();
     bindDashboard();
   };
+  bindCalendarDays();
+}
+
+function bindCalendarDays(){
+  document.querySelectorAll('[data-calendar-day]').forEach(el=>{
+    el.onclick=()=>showDayAppointments(el.dataset.calendarDay);
+    el.style.cursor='pointer';
+  });
+}
+
+function showDayAppointments(dateStr){
+  const dayAppointments = state.appointments.filter(a => a.data_agendamento === dateStr).sort((a,b) => a.horario.localeCompare(b.horario));
+  
+  if(dayAppointments.length === 0){
+    toast('Nenhum agendamento para este dia','info');
+    return;
+  }
+  
+  let modalHTML = '<div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999" id="agendmentModal"><div style="background:#0f1419;border:1px solid #1e2632;border-radius:8px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;padding:24px;position:relative"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><h2 style="margin:0">Agenda do dia</h2><button id="closeModal" style="background:none;border:none;color:#e5e7eb;font-size:24px;cursor:pointer">×</button></div>';
+  
+  dayAppointments.forEach((apt, idx) => {
+    modalHTML += '<div style="border:1px solid #1e2632;border-radius:6px;padding:16px;margin-bottom:16px;background:#0a0d12">';
+    modalHTML += '<div style="display:grid;gap:8px;font-size:14px">';
+    modalHTML += '<div><span style="color:#9ca3af">Horário do exame:</span> <strong>' + apt.horario + '</strong></div>';
+    modalHTML += '<div><span style="color:#9ca3af">Nome do hospital:</span> <strong>' + getName(state.lookups.hospitais, apt.hospital_id, 'hospital_id', 'nome_hospital') + '</strong></div>';
+    modalHTML += '<div><span style="color:#9ca3af">Nome do médico:</span> <strong>' + getName(state.lookups.medicos, apt.medico_id, 'medico_id', 'nome_medico') + '</strong></div>';
+    modalHTML += '<div><span style="color:#9ca3af">Paciente:</span> <strong>' + apt.paciente + '</strong></div>';
+    modalHTML += '<div><span style="color:#9ca3af">Procedimento:</span> <strong>' + getName(state.lookups.procedimentos, apt.procedimento_id, 'procedimento_id', 'nome_procedimento') + '</strong></div>';
+    modalHTML += '<div><span style="color:#9ca3af">Contato:</span> <strong>' + (apt.contato || '-') + '</strong></div>';
+    modalHTML += '</div>';
+    if(idx < dayAppointments.length - 1) modalHTML += '<div style="border-top:1px solid #1e2632;margin-top:16px;padding-top:16px;text-align:center;color:#6b7280">─────────────────────</div>';
+    modalHTML += '</div>';
+  });
+  
+  modalHTML += '</div></div>';
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  document.getElementById('closeModal').onclick=()=>document.getElementById('agendmentModal').remove();
+  document.getElementById('agendmentModal').onclick=(e)=>{if(e.target.id==='agendmentModal') document.getElementById('agendmentModal').remove();};
 }
 
 function appointments(){return `<div class="top"><div><h1 class="page-title">Lista de agendamentos</h1><p class="page-sub">Visualize, edite ou exclua registros.</p></div><button class="btn btn-primary" data-nav="new">+ Novo agendamento</button></div><div class="card table-wrap"><table><thead><tr><th>Data/Hora</th><th>Paciente</th><th>Hospital</th><th>Médico</th><th>Procedimento</th><th>Status</th><th>Ações</th></tr></thead><tbody>${state.appointments.map(a=>`<tr><td>${a.data_agendamento} ${a.horario}</td><td>${a.paciente}</td><td>${getName(state.lookups.hospitais,a.hospital_id,'hospital_id','nome_hospital')}</td><td>${getName(state.lookups.medicos,a.medico_id,'medico_id','nome_medico')}</td><td>${getName(state.lookups.procedimentos,a.procedimento_id,'procedimento_id','nome_procedimento')}</td><td><span class="badge ${statusClass(a.status_id)}">${getName(state.lookups.status,a.status_id,'status_id','nome_status')}</span></td><td><div class="actions"><button class="btn" data-edit="${a.agendamento_id}">✏️</button><button class="btn btn-danger" data-del="${a.agendamento_id}">🗑️</button></div></td></tr>`).join('')}</tbody></table></div>`}
@@ -151,7 +191,7 @@ function renderCalendar(){
     }
     
     const opacityStyle = isBlocked ? 'opacity:0.7;' : '';
-    calendarHTML += '<div style="padding:10px;background:' + bgColor + ';border:1px solid ' + borderColor + ';text-align:center;border-radius:4px;cursor:pointer;font-weight:500;color:' + textColor + ';' + opacityStyle + 'font-size:13px">' + day + '</div>';
+    calendarHTML += '<div data-calendar-day="' + dateStr + '" style="padding:10px;background:' + bgColor + ';border:1px solid ' + borderColor + ';text-align:center;border-radius:4px;font-weight:500;color:' + textColor + ';' + opacityStyle + 'font-size:13px">' + day + '</div>';
   }
   
   calendarHTML += '</div></div>';

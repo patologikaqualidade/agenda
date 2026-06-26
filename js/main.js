@@ -117,6 +117,18 @@ function bindSettings(){
       view.innerHTML=settingsMedicos();
       bindSettingsMedicos();
     }
+    if(cfg==='convenios'){
+      view.innerHTML=settingsConvenios();
+      bindSettingsConvenios();
+    }
+    if(cfg==='procedimentos'){
+      view.innerHTML=settingsProcedimentos();
+      bindSettingsProcedimentos();
+    }
+    if(cfg==='status'){
+      view.innerHTML=settingsStatus();
+      bindSettingsStatus();
+    }
   });
 }
 
@@ -285,6 +297,248 @@ function bindSettingsMedicos(){
         view.innerHTML=settingsMedicos();
         bindSettingsMedicos();
         toast('Médico deletado','success');
+      }catch(err){
+        toast(err.message,'danger');
+      }
+    }
+  });
+}
+
+// ========== SETTINGS CONVÊNIOS ==========
+function settingsConvenios(){
+  const convenios = state.lookups.convenios || [];
+  return `<div class="top"><div><h1 class="page-title">Cadastro de Convênios</h1><p class="page-sub">Adicione, edite ou remova convênios.</p></div><button class="btn" data-back-settings>← Voltar</button></div>
+    <form id="convenioForm" class="card" style="padding:18px;margin-bottom:16px">
+      <div class="form-grid">
+        <input id="convenioId" hidden>
+        <label>Nome do Convênio<input class="input" id="convenioNome" placeholder="Ex: Bradesco Saúde" required></label>
+        <label>Contato<input class="input" id="convenioContato" placeholder="(79) 9999-9999"></label>
+      </div>
+      <button class="btn btn-primary" style="margin-top:14px">Salvar Convênio</button>
+    </form>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>Contato</th><th>Ações</th></tr></thead>
+        <tbody>${convenios.map(c=>`<tr>
+          <td>${c.nome_convenio}</td>
+          <td>${c.contato || '-'}</td>
+          <td><button class="btn" data-edit-conv="${c.convenio_id}">✏️</button> <button class="btn btn-danger" data-del-conv="${c.convenio_id}">🗑️</button></td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function bindSettingsConvenios(){
+  document.querySelector('[data-back-settings]').onclick=()=>renderShell('settings');
+  
+  document.getElementById('convenioForm').onsubmit=async e=>{
+    e.preventDefault();
+    const p={
+      tipo:'convenio',
+      convenio_id:document.getElementById('convenioId').value||'',
+      nome_convenio:document.getElementById('convenioNome').value,
+      contato:document.getElementById('convenioContato').value,
+      org_id:state.user.org_id,
+      unidade_id:state.unit.unidade_id,
+      ativo:'SIM'
+    };
+    try{
+      await api('saveLookup',p);
+      await loadBase();
+      const view=document.getElementById('view');
+      view.innerHTML=settingsConvenios();
+      bindSettingsConvenios();
+      toast('Convênio salvo','success');
+      document.getElementById('convenioForm').reset();
+      document.getElementById('convenioId').value='';
+    }catch(err){
+      toast(err.message,'danger');
+    }
+  };
+  
+  document.querySelectorAll('[data-edit-conv]').forEach(b=>b.onclick=()=>{
+    const c=state.lookups.convenios.find(x=>x.convenio_id===b.dataset.editConv);
+    document.getElementById('convenioId').value=c.convenio_id;
+    document.getElementById('convenioNome').value=c.nome_convenio;
+    document.getElementById('convenioContato').value=c.contato||'';
+  });
+  
+  document.querySelectorAll('[data-del-conv]').forEach(b=>b.onclick=async()=>{
+    if(confirm('Deletar este convênio?')){
+      try{
+        await api('saveLookup',{
+          tipo:'convenio',
+          convenio_id:b.dataset.delConv,
+          ativo:'NAO',
+          org_id:state.user.org_id,
+          unidade_id:state.unit.unidade_id
+        });
+        await loadBase();
+        const view=document.getElementById('view');
+        view.innerHTML=settingsConvenios();
+        bindSettingsConvenios();
+        toast('Convênio deletado','success');
+      }catch(err){
+        toast(err.message,'danger');
+      }
+    }
+  });
+}
+
+// ========== SETTINGS PROCEDIMENTOS ==========
+function settingsProcedimentos(){
+  const procedimentos = state.lookups.procedimentos || [];
+  return `<div class="top"><div><h1 class="page-title">Cadastro de Procedimentos</h1><p class="page-sub">Adicione, edite ou remova procedimentos.</p></div><button class="btn" data-back-settings>← Voltar</button></div>
+    <form id="procedimentoForm" class="card" style="padding:18px;margin-bottom:16px">
+      <div class="form-grid">
+        <input id="procedimentoId" hidden>
+        <label>Nome do Procedimento<input class="input" id="procedimentoNome" placeholder="Ex: Congelação" required></label>
+        <label>Descrição<textarea class="textarea" id="procedimentoDescricao" placeholder="Descrição do procedimento" style="height:80px"></textarea></label>
+      </div>
+      <button class="btn btn-primary" style="margin-top:14px">Salvar Procedimento</button>
+    </form>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>Descrição</th><th>Ações</th></tr></thead>
+        <tbody>${procedimentos.map(p=>`<tr>
+          <td>${p.nome_procedimento}</td>
+          <td>${p.descricao || '-'}</td>
+          <td><button class="btn" data-edit-proc="${p.procedimento_id}">✏️</button> <button class="btn btn-danger" data-del-proc="${p.procedimento_id}">🗑️</button></td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function bindSettingsProcedimentos(){
+  document.querySelector('[data-back-settings]').onclick=()=>renderShell('settings');
+  
+  document.getElementById('procedimentoForm').onsubmit=async e=>{
+    e.preventDefault();
+    const p={
+      tipo:'procedimento',
+      procedimento_id:document.getElementById('procedimentoId').value||'',
+      nome_procedimento:document.getElementById('procedimentoNome').value,
+      descricao:document.getElementById('procedimentoDescricao').value,
+      org_id:state.user.org_id,
+      unidade_id:state.unit.unidade_id,
+      ativo:'SIM'
+    };
+    try{
+      await api('saveLookup',p);
+      await loadBase();
+      const view=document.getElementById('view');
+      view.innerHTML=settingsProcedimentos();
+      bindSettingsProcedimentos();
+      toast('Procedimento salvo','success');
+      document.getElementById('procedimentoForm').reset();
+      document.getElementById('procedimentoId').value='';
+    }catch(err){
+      toast(err.message,'danger');
+    }
+  };
+  
+  document.querySelectorAll('[data-edit-proc]').forEach(b=>b.onclick=()=>{
+    const pr=state.lookups.procedimentos.find(x=>x.procedimento_id===b.dataset.editProc);
+    document.getElementById('procedimentoId').value=pr.procedimento_id;
+    document.getElementById('procedimentoNome').value=pr.nome_procedimento;
+    document.getElementById('procedimentoDescricao').value=pr.descricao||'';
+  });
+  
+  document.querySelectorAll('[data-del-proc]').forEach(b=>b.onclick=async()=>{
+    if(confirm('Deletar este procedimento?')){
+      try{
+        await api('saveLookup',{
+          tipo:'procedimento',
+          procedimento_id:b.dataset.delProc,
+          ativo:'NAO',
+          org_id:state.user.org_id,
+          unidade_id:state.unit.unidade_id
+        });
+        await loadBase();
+        const view=document.getElementById('view');
+        view.innerHTML=settingsProcedimentos();
+        bindSettingsProcedimentos();
+        toast('Procedimento deletado','success');
+      }catch(err){
+        toast(err.message,'danger');
+      }
+    }
+  });
+}
+
+// ========== SETTINGS STATUS ==========
+function settingsStatus(){
+  const status = state.lookups.status || [];
+  return `<div class="top"><div><h1 class="page-title">Cadastro de Status</h1><p class="page-sub">Adicione, edite ou remova status de agendamento.</p></div><button class="btn" data-back-settings>← Voltar</button></div>
+    <form id="statusForm" class="card" style="padding:18px;margin-bottom:16px">
+      <div class="form-grid">
+        <input id="statusId" hidden>
+        <label>Nome do Status<input class="input" id="statusNome" placeholder="Ex: Confirmado" required></label>
+        <label>Cor<input class="input" type="color" id="statusCor" value="#2563EB"></label>
+      </div>
+      <button class="btn btn-primary" style="margin-top:14px">Salvar Status</button>
+    </form>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>Cor</th><th>Ações</th></tr></thead>
+        <tbody>${status.map(s=>`<tr>
+          <td>${s.nome_status}</td>
+          <td><div style="display:inline-block;width:20px;height:20px;background:${s.cor};border-radius:3px;border:1px solid #ccc"></div> ${s.cor}</td>
+          <td><button class="btn" data-edit-st="${s.status_id}">✏️</button> <button class="btn btn-danger" data-del-st="${s.status_id}">🗑️</button></td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function bindSettingsStatus(){
+  document.querySelector('[data-back-settings]').onclick=()=>renderShell('settings');
+  
+  document.getElementById('statusForm').onsubmit=async e=>{
+    e.preventDefault();
+    const p={
+      tipo:'status',
+      status_id:document.getElementById('statusId').value||'',
+      nome_status:document.getElementById('statusNome').value,
+      cor:document.getElementById('statusCor').value,
+      org_id:state.user.org_id,
+      ativo:'SIM'
+    };
+    try{
+      await api('saveLookup',p);
+      await loadBase();
+      const view=document.getElementById('view');
+      view.innerHTML=settingsStatus();
+      bindSettingsStatus();
+      toast('Status salvo','success');
+      document.getElementById('statusForm').reset();
+      document.getElementById('statusId').value='';
+      document.getElementById('statusCor').value='#2563EB';
+    }catch(err){
+      toast(err.message,'danger');
+    }
+  };
+  
+  document.querySelectorAll('[data-edit-st]').forEach(b=>b.onclick=()=>{
+    const st=state.lookups.status.find(x=>x.status_id===b.dataset.editSt);
+    document.getElementById('statusId').value=st.status_id;
+    document.getElementById('statusNome').value=st.nome_status;
+    document.getElementById('statusCor').value=st.cor;
+  });
+  
+  document.querySelectorAll('[data-del-st]').forEach(b=>b.onclick=async()=>{
+    if(confirm('Deletar este status?')){
+      try{
+        await api('saveLookup',{
+          tipo:'status',
+          status_id:b.dataset.delSt,
+          ativo:'NAO',
+          org_id:state.user.org_id
+        });
+        await loadBase();
+        const view=document.getElementById('view');
+        view.innerHTML=settingsStatus();
+        bindSettingsStatus();
+        toast('Status deletado','success');
       }catch(err){
         toast(err.message,'danger');
       }

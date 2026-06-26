@@ -184,21 +184,23 @@ function renderCalendar(){
   
   let calendarHTML = '<div class="card" style="padding:20px;background:#0f1419;border:1px solid #1e2632"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><div style="display:flex;gap:10px;align-items:center"><button id="prevMonth" class="btn" style="padding:6px 12px;font-size:14px">‹</button><h3 style="margin:0;width:200px;text-align:center">' + monthNames[month] + ' ' + year + '</h3><button id="nextMonth" class="btn" style="padding:6px 12px;font-size:14px">›</button></div><div style="display:flex;gap:12px;font-size:12px"><div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#22c55e;border-radius:3px"></div><span>Agendamento</span></div><div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#ef4444;border-radius:3px"></div><span>Bloqueado</span></div></div></div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">';
   
-  // Days of week headers
   dayNames.forEach(day => {
     calendarHTML += '<div style="text-align:center;padding:10px;font-weight:bold;font-size:12px;color:#9ca3af;border-bottom:1px solid #1e2632">' + day + '</div>';
   });
   
-  // Empty cells for days before month starts
   for (let i = 0; i < startingDayOfWeek; i++) {
     calendarHTML += '<div style="padding:10px;background:#0a0d12;border:1px solid #1e2632"></div>';
   }
   
-  // Days of month
   for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-    const hasAppointment = state.appointments.some(a => a.data_agendamento === dateStr);
-    const isBlocked = state.blocked.some(b => dateStr >= b.data_inicio && dateStr <= b.data_fim);
+    const dateStrISO = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    const dateStrBR = String(day).padStart(2, '0') + '/' + String(month + 1).padStart(2, '0') + '/' + year;
+    const hasAppointment = state.appointments.some(a => a.data_agendamento === dateStrBR || a.data_agendamento === dateStrISO);
+    const isBlocked = state.blocked.some(b => {
+      const bStart = b.data_inicio.replace(/\//g, '-');
+      const bEnd = b.data_fim.replace(/\//g, '-');
+      return dateStrISO >= bStart && dateStrISO <= bEnd;
+    });
     
     let bgColor = '#0a0d12';
     let borderColor = '#1e2632';
@@ -213,7 +215,7 @@ function renderCalendar(){
     }
     
     const opacityStyle = isBlocked ? 'opacity:0.7;' : '';
-    calendarHTML += '<div data-calendar-day="' + dateStr + '" style="padding:10px;background:' + bgColor + ';border:1px solid ' + borderColor + ';text-align:center;border-radius:4px;font-weight:500;color:' + textColor + ';' + opacityStyle + 'font-size:13px">' + day + '</div>';
+    calendarHTML += '<div data-calendar-day="' + dateStrBR + '" style="padding:10px;background:' + bgColor + ';border:1px solid ' + borderColor + ';text-align:center;border-radius:4px;font-weight:500;color:' + textColor + ';' + opacityStyle + 'font-size:13px">' + day + '</div>';
   }
   
   calendarHTML += '</div></div>';

@@ -113,6 +113,10 @@ function bindSettings(){
       view.innerHTML=settingsHospitais();
       bindSettingsHospitais();
     }
+    if(cfg==='medicos'){
+      view.innerHTML=settingsMedicos();
+      bindSettingsMedicos();
+    }
   });
 }
 
@@ -193,6 +197,94 @@ function bindSettingsHospitais(){
         view.innerHTML=settingsHospitais();
         bindSettingsHospitais();
         toast('Hospital deletado','success');
+      }catch(err){
+        toast(err.message,'danger');
+      }
+    }
+  });
+}
+
+// ========== SETTINGS MÉDICOS ==========
+function settingsMedicos(){
+  const medicos = state.lookups.medicos || [];
+  return `<div class="top"><div><h1 class="page-title">Cadastro de Médicos</h1><p class="page-sub">Adicione, edite ou remova médicos.</p></div><button class="btn" data-back-settings>← Voltar</button></div>
+    <form id="medicoForm" class="card" style="padding:18px;margin-bottom:16px">
+      <div class="form-grid">
+        <input id="medicoId" hidden>
+        <label>Nome do Médico<input class="input" id="medicoNome" placeholder="Ex: Dr. João Silva" required></label>
+        <label>Especialidade<input class="input" id="medicoEspecialidade" placeholder="Ex: Oncologia"></label>
+        <label>CRM<input class="input" id="medicoCRM" placeholder="Ex: 123456"></label>
+        <label>Telefone<input class="input" id="medicoTelefone" placeholder="(79) 9999-9999"></label>
+      </div>
+      <button class="btn btn-primary" style="margin-top:14px">Salvar Médico</button>
+    </form>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>Especialidade</th><th>CRM</th><th>Ações</th></tr></thead>
+        <tbody>${medicos.map(m=>`<tr>
+          <td>${m.nome_medico}</td>
+          <td>${m.especialidade || '-'}</td>
+          <td>${m.crm || '-'}</td>
+          <td><button class="btn" data-edit-med="${m.medico_id}">✏️</button> <button class="btn btn-danger" data-del-med="${m.medico_id}">🗑️</button></td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function bindSettingsMedicos(){
+  document.querySelector('[data-back-settings]').onclick=()=>renderShell('settings');
+  
+  document.getElementById('medicoForm').onsubmit=async e=>{
+    e.preventDefault();
+    const p={
+      tipo:'medico',
+      medico_id:document.getElementById('medicoId').value||'',
+      nome_medico:document.getElementById('medicoNome').value,
+      especialidade:document.getElementById('medicoEspecialidade').value,
+      crm:document.getElementById('medicoCRM').value,
+      telefone:document.getElementById('medicoTelefone').value,
+      org_id:state.user.org_id,
+      unidade_id:state.unit.unidade_id,
+      ativo:'SIM'
+    };
+    try{
+      await api('saveLookup',p);
+      await loadBase();
+      const view=document.getElementById('view');
+      view.innerHTML=settingsMedicos();
+      bindSettingsMedicos();
+      toast('Médico salvo','success');
+      document.getElementById('medicoForm').reset();
+      document.getElementById('medicoId').value='';
+    }catch(err){
+      toast(err.message,'danger');
+    }
+  };
+  
+  document.querySelectorAll('[data-edit-med]').forEach(b=>b.onclick=()=>{
+    const m=state.lookups.medicos.find(x=>x.medico_id===b.dataset.editMed);
+    document.getElementById('medicoId').value=m.medico_id;
+    document.getElementById('medicoNome').value=m.nome_medico;
+    document.getElementById('medicoEspecialidade').value=m.especialidade||'';
+    document.getElementById('medicoCRM').value=m.crm||'';
+    document.getElementById('medicoTelefone').value=m.telefone||'';
+  });
+  
+  document.querySelectorAll('[data-del-med]').forEach(b=>b.onclick=async()=>{
+    if(confirm('Deletar este médico?')){
+      try{
+        await api('saveLookup',{
+          tipo:'medico',
+          medico_id:b.dataset.delMed,
+          ativo:'NAO',
+          org_id:state.user.org_id,
+          unidade_id:state.unit.unidade_id
+        });
+        await loadBase();
+        const view=document.getElementById('view');
+        view.innerHTML=settingsMedicos();
+        bindSettingsMedicos();
+        toast('Médico deletado','success');
       }catch(err){
         toast(err.message,'danger');
       }

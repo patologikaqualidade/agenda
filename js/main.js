@@ -49,8 +49,7 @@ function renderLogin(){
 function toggleTheme(){document.documentElement.dataset.theme = document.documentElement.dataset.theme==='light'?'dark':'light'}
 
 function renderUnits(){
-  app.innerHTML=`<main class="main"><div class="top"><div><h1 class="page-title">Seleção de unidade</h1><p class="page-sub">Escolha onde deseja trabalhar agora.</p></div><button class="btn" id="logout">Sair</button></div><div class="grid">${state.units.map(u=>`<div class="card unit-card" data-unit="${u.unidade_id}"><div style="display:flex;gap:14px;align-items:center"><div class="unit-icon">🏥</div><div><b>${u.nome_unidade}</b><p class="muted">${u.endereco}</p><span class="badge b-green">${u.online||0} usuários online</span></div></div><b>›</b></div>`).join('')}</div></main>`;
-  document.getElementById('logout').onclick=()=>{clearSession(); renderLogin();};
+  app.innerHTML=`<main class="main"><div class="top"><div><h1 class="page-title">Seleção de unidade</h1><p class="page-sub">Escolha onde deseja trabalhar agora.</p></div></div><div class="grid">${state.units.map(u=>`<div class="card unit-card" data-unit="${u.unidade_id}"><div style="display:flex;gap:14px;align-items:center"><div class="unit-icon">🏥</div><div><b>${u.nome_unidade}</b><p class="muted">${u.endereco}</p><span class="badge b-green">${u.online||0} usuários online</span></div></div><b>›</b></div>`).join('')}</div></main>`;
   document.querySelectorAll('[data-unit]').forEach(el=>el.onclick=async()=>{state.unit=state.units.find(u=>u.unidade_id===el.dataset.unit); saveUnit(state.unit); await loadBase(); renderShell('dashboard');});
 }
 
@@ -65,14 +64,15 @@ async function loadBase(){
   state.blocked = blockedRes.bloqueios;
 }
 
-function shellContent(page){return `<div class="shell"><aside class="sidebar"><div class="brand"><div class="brand-mark">S</div> SmartLink</div><div class="muted" style="margin-bottom:18px">${state.user.nome}<br>${state.unit.nome_unidade}</div><nav class="nav">
+function shellContent(page){return `<div class="shell"><aside class="sidebar"><div class="brand"><div class="brand-mark">D</div> Delfos</div><div class="muted" style="margin-bottom:18px">${state.user.nome}<br>${state.unit.nome_unidade}</div><nav class="nav">
   ${['dashboard:Dashboard','appointments:Agendamentos','new:Novo agendamento','blocked:Datas bloqueadas','settings:Configurações'].map(x=>{const [id,tx]=x.split(':');return `<button class="btn ${page===id?'active':''}" data-nav="${id}">${tx}</button>`}).join('')}
-</nav><button class="btn" id="backUnits" style="margin-top:18px">Trocar unidade</button></aside><main class="main"><div id="view"></div></main></div>`}
+</nav><button class="btn" id="backUnits" style="margin-top:18px">Trocar unidade</button><button class="btn btn-danger" id="logout" style="margin-top:8px">Sair</button></aside><main class="main"><div id="view"></div></main></div>`}
 
 function renderShell(page){
   app.innerHTML=shellContent(page); 
   document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>renderShell(b.dataset.nav)); 
-  document.getElementById('backUnits').onclick=()=>{state.unit=null; renderUnits();}; 
+  document.getElementById('backUnits').onclick=()=>{state.unit=null; renderUnits();};
+  document.getElementById('logout').onclick=()=>{clearSession(); renderLogin();};
   const view=document.getElementById('view'); 
   if(page==='dashboard') view.innerHTML=dashboard(); 
   if(page==='appointments') {view.innerHTML=appointments(); bindAppointments();} 

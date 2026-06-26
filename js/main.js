@@ -69,7 +69,20 @@ function shellContent(page){return `<div class="shell"><aside class="sidebar"><d
   ${['dashboard:Dashboard','appointments:Agendamentos','new:Novo agendamento','blocked:Datas bloqueadas','settings:Configurações'].map(x=>{const [id,tx]=x.split(':');return `<button class="btn ${page===id?'active':''}" data-nav="${id}">${tx}</button>`}).join('')}
 </nav><button class="btn" id="backUnits" style="margin-top:18px">Trocar unidade</button></aside><main class="main"><div id="view"></div></main></div>`}
 
-function renderShell(page){app.innerHTML=shellContent(page); document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>renderShell(b.dataset.nav)); document.getElementById('backUnits').onclick=()=>{state.unit=null; renderUnits();}; const view=document.getElementById('view'); if(page==='dashboard') view.innerHTML=dashboard(); if(page==='appointments') {view.innerHTML=appointments(); bindAppointments();} if(page==='new') {view.innerHTML=formAppointment(); bindForm();} if(page==='blocked') {view.innerHTML=blocked(); bindBlocked();} if(page==='settings') view.innerHTML=settings();}
+function renderShell(page){
+  app.innerHTML=shellContent(page); 
+  document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>renderShell(b.dataset.nav)); 
+  document.getElementById('backUnits').onclick=()=>{state.unit=null; renderUnits();}; 
+  const view=document.getElementById('view'); 
+  if(page==='dashboard') view.innerHTML=dashboard(); 
+  if(page==='appointments') {view.innerHTML=appointments(); bindAppointments();} 
+  if(page==='new') {view.innerHTML=formAppointment(); bindForm();} 
+  if(page==='blocked') {view.innerHTML=blocked(); bindBlocked();} 
+  if(page==='settings') {
+    view.innerHTML=settings(); 
+    bindSettings();
+  }
+}
 
 function dashboard(){const total=state.appointments.length, canc=state.appointments.filter(a=>a.status_id==='ST004').length, reag=state.appointments.filter(a=>a.reagendamento==='SIM').length; return `<div class="top"><div><h1 class="page-title">Dashboard de indicadores</h1><p class="page-sub">Visão geral da unidade selecionada.</p></div></div><div class="grid grid-4"><div class="card kpi"><div class="label">Total</div><div class="num">${total}</div></div><div class="card kpi"><div class="label">Realizados</div><div class="num">${state.appointments.filter(a=>a.status_id==='ST003').length}</div></div><div class="card kpi"><div class="label">Cancelados</div><div class="num status-bad">${canc}</div></div><div class="card kpi"><div class="label">Reagendados</div><div class="num status-alert">${reag}</div></div></div><div class="grid grid-2" style="margin-top:16px"><div class="card kpi"><h3>Agendamentos por status</h3><div class="donut"><div>${total}<br><span class="muted">Total</span></div></div></div><div class="card kpi"><h3>Agendamentos por hospital</h3><div class="chart-fake"><div class="bar" style="height:70%"></div><div class="bar" style="height:48%"></div><div class="bar" style="height:28%"></div><div class="bar" style="height:18%"></div></div></div></div>`}
 
@@ -87,4 +100,102 @@ function blocked(){return `<div class="top"><div><h1 class="page-title">Datas bl
 
 function bindBlocked(){document.getElementById('blockForm').onsubmit=async e=>{e.preventDefault(); const p=Object.fromEntries(new FormData(e.target)); p.org_id=state.user.org_id;p.unidade_id=state.unit.unidade_id;p.criado_por_user_id=state.user.user_id; try{await api('saveBlockedDate',p); await loadBase(); renderShell('blocked'); toast('Bloqueio cadastrado','success');}catch(err){toast(err.message,'danger')}}}
 
-function settings(){return `<div class="top"><div><h1 class="page-title">Módulo de configurações</h1><p class="page-sub">Cadastros e permissões do sistema.</p></div></div><div class="grid grid-4">${['Usuários','Hospitais','Médicos','Convênios','Procedimentos','Status','Motivos cancelamento','Config. agenda'].map((x,i)=>`<div class="card kpi"><div class="unit-icon">${['👤','🏥','🩺','💳','🧫','✅','❌','📅'][i]}</div><h3>${x}</h3><p class="muted">Cadastrar, editar e desativar</p><button class="btn">Abrir</button></div>`).join('')}</div>`}
+// ========== SETTINGS ==========
+function settings(){
+  return `<div class="top"><div><h1 class="page-title">Módulo de configurações</h1><p class="page-sub">Cadastros e permissões do sistema.</p></div></div><div class="grid grid-4">${['Usuários:usuarios','Hospitais:hospitais','Médicos:medicos','Convênios:convenios','Procedimentos:procedimentos','Status:status','Motivos cancelamento:motivos','Config. agenda:configAgenda'].map((x,i)=>{const [tx,id]=x.split(':');const icons=['👤','🏥','🩺','💳','🧫','✅','❌','📅'];return `<div class="card kpi"><div class="unit-icon">${icons[i]}</div><h3>${tx}</h3><p class="muted">Cadastrar, editar</p><button class="btn" data-config="${id}">Abrir</button></div>`}).join('')}</div>`;
+}
+
+function bindSettings(){
+  document.querySelectorAll('[data-config]').forEach(b=>b.onclick=()=>{
+    const cfg=b.dataset.config;
+    const view=document.getElementById('view');
+    if(cfg==='hospitais'){
+      view.innerHTML=settingsHospitais();
+      bindSettingsHospitais();
+    }
+  });
+}
+
+// ========== SETTINGS HOSPITAIS ==========
+function settingsHospitais(){
+  const hospitais = state.lookups.hospitais || [];
+  return `<div class="top"><div><h1 class="page-title">Cadastro de Hospitais</h1><p class="page-sub">Adicione, edite ou remova hospitais.</p></div><button class="btn" data-back-settings>← Voltar</button></div>
+    <form id="hospitalForm" class="card" style="padding:18px;margin-bottom:16px">
+      <div class="form-grid">
+        <input id="hospitalId" hidden>
+        <label>Nome do Hospital<input class="input" id="hospitalNome" placeholder="Ex: Hospital Primavera" required></label>
+        <label>Endereço<input class="input" id="hospitalEndereco" placeholder="Endereço"></label>
+        <label>Telefone<input class="input" id="hospitalTelefone" placeholder="(79) 9999-9999"></label>
+      </div>
+      <button class="btn btn-primary" style="margin-top:14px">Salvar Hospital</button>
+    </form>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr><th>Nome</th><th>Endereço</th><th>Ações</th></tr></thead>
+        <tbody>${hospitais.map(h=>`<tr>
+          <td>${h.nome_hospital}</td>
+          <td>${h.endereco || '-'}</td>
+          <td><button class="btn" data-edit-hosp="${h.hospital_id}">✏️</button> <button class="btn btn-danger" data-del-hosp="${h.hospital_id}">🗑️</button></td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function bindSettingsHospitais(){
+  document.querySelector('[data-back-settings]').onclick=()=>renderShell('settings');
+  
+  document.getElementById('hospitalForm').onsubmit=async e=>{
+    e.preventDefault();
+    const p={
+      tipo:'hospital',
+      hospital_id:document.getElementById('hospitalId').value||'',
+      nome_hospital:document.getElementById('hospitalNome').value,
+      endereco:document.getElementById('hospitalEndereco').value,
+      telefone:document.getElementById('hospitalTelefone').value,
+      org_id:state.user.org_id,
+      unidade_id:state.unit.unidade_id,
+      ativo:'SIM'
+    };
+    try{
+      await api('saveLookup',p);
+      await loadBase();
+      const view=document.getElementById('view');
+      view.innerHTML=settingsHospitais();
+      bindSettingsHospitais();
+      toast('Hospital salvo','success');
+      document.getElementById('hospitalForm').reset();
+      document.getElementById('hospitalId').value='';
+    }catch(err){
+      toast(err.message,'danger');
+    }
+  };
+  
+  document.querySelectorAll('[data-edit-hosp]').forEach(b=>b.onclick=()=>{
+    const h=state.lookups.hospitais.find(x=>x.hospital_id===b.dataset.editHosp);
+    document.getElementById('hospitalId').value=h.hospital_id;
+    document.getElementById('hospitalNome').value=h.nome_hospital;
+    document.getElementById('hospitalEndereco').value=h.endereco||'';
+    document.getElementById('hospitalTelefone').value=h.telefone||'';
+  });
+  
+  document.querySelectorAll('[data-del-hosp]').forEach(b=>b.onclick=async()=>{
+    if(confirm('Deletar este hospital?')){
+      try{
+        await api('saveLookup',{
+          tipo:'hospital',
+          hospital_id:b.dataset.delHosp,
+          ativo:'NAO',
+          org_id:state.user.org_id,
+          unidade_id:state.unit.unidade_id
+        });
+        await loadBase();
+        const view=document.getElementById('view');
+        view.innerHTML=settingsHospitais();
+        bindSettingsHospitais();
+        toast('Hospital deletado','success');
+      }catch(err){
+        toast(err.message,'danger');
+      }
+    }
+  });
+}

@@ -21,8 +21,18 @@ export function getSession() {
   return session ? JSON.parse(session) : null;
 }
 
+export function saveUnit(unit) {
+  localStorage.setItem('currentUnit', JSON.stringify(unit));
+}
+
+export function getUnit() {
+  const unit = localStorage.getItem('currentUnit');
+  return unit ? JSON.parse(unit) : null;
+}
+
 export function clearSession() {
   localStorage.removeItem('session');
+  localStorage.removeItem('currentUnit');
 }
 
 // ========== MOCK ==========

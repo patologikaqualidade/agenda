@@ -2,7 +2,7 @@ import { api, saveSession, getSession, clearSession, saveUnit, getUnit } from '.
 import { toast } from './ui/toast.js';
 
 const app = document.getElementById('app');
-const state = { user:null, unit:null, units:[], lookups:{}, appointments:[], blocked:[] };
+const state = { user:null, unit:null, units:[], lookups:{}, appointments:[], blocked:[], calendarMonth: new Date().getMonth(), calendarYear: new Date().getFullYear() };
 
 const getName=(arr,id,key,val)=> (arr||[]).find(x=>x[key]===id)?.[val] || id || '-';
 const statusClass=s=> s==='ST004'?'b-red':s==='ST005'||s==='ST006'?'b-yellow':s==='ST002'||s==='ST003'?'b-green':'b-blue';
@@ -74,7 +74,10 @@ function renderShell(page){
   document.getElementById('backUnits').onclick=()=>{state.unit=null; renderUnits();};
   document.getElementById('logout').onclick=()=>{clearSession(); renderLogin();};
   const view=document.getElementById('view'); 
-  if(page==='dashboard') view.innerHTML=dashboard(); 
+  if(page==='dashboard') {
+    view.innerHTML=dashboard(); 
+    bindDashboard();
+  }
   if(page==='appointments') {view.innerHTML=appointments(); bindAppointments();} 
   if(page==='new') {view.innerHTML=formAppointment(); bindForm();} 
   if(page==='blocked') {view.innerHTML=blocked(); bindBlocked();} 
@@ -89,12 +92,26 @@ function dashboard(){
   return `<div class="top"><div><h1 class="page-title">Dashboard de indicadores</h1><p class="page-sub">Visão geral da unidade selecionada.</p></div></div><div class="grid grid-4"><div class="card kpi"><div class="label">Total</div><div class="num">${total}</div></div><div class="card kpi"><div class="label">Realizados</div><div class="num">${state.appointments.filter(a=>a.status_id==='ST003').length}</div></div><div class="card kpi"><div class="label">Cancelados</div><div class="num status-bad">${canc}</div></div><div class="card kpi"><div class="label">Reagendados</div><div class="num status-alert">${reag}</div></div></div><div class="grid grid-2" style="margin-top:16px"><div class="card kpi"><h3>Agendamentos por status</h3><div class="donut"><div>${total}<br><span class="muted">Total</span></div></div></div><div class="card kpi"><h3>Agendamentos por hospital</h3><div class="chart-fake"><div class="bar" style="height:70%"></div><div class="bar" style="height:48%"></div><div class="bar" style="height:28%"></div><div class="bar" style="height:18%"></div></div></div></div><div style="margin-top:24px">${renderCalendar()}</div>`;
 }
 
+function bindDashboard(){
+  document.getElementById('prevMonth').onclick=()=>{
+    state.calendarMonth--;
+    if(state.calendarMonth < 0){state.calendarMonth = 11; state.calendarYear--;}
+    document.getElementById('view').innerHTML=dashboard();
+    bindDashboard();
+  };
+  document.getElementById('nextMonth').onclick=()=>{
+    state.calendarMonth++;
+    if(state.calendarMonth > 11){state.calendarMonth = 0; state.calendarYear++;}
+    document.getElementById('view').innerHTML=dashboard();
+    bindDashboard();
+  };
+}
+
 function appointments(){return `<div class="top"><div><h1 class="page-title">Lista de agendamentos</h1><p class="page-sub">Visualize, edite ou exclua registros.</p></div><button class="btn btn-primary" data-nav="new">+ Novo agendamento</button></div><div class="card table-wrap"><table><thead><tr><th>Data/Hora</th><th>Paciente</th><th>Hospital</th><th>Médico</th><th>Procedimento</th><th>Status</th><th>Ações</th></tr></thead><tbody>${state.appointments.map(a=>`<tr><td>${a.data_agendamento} ${a.horario}</td><td>${a.paciente}</td><td>${getName(state.lookups.hospitais,a.hospital_id,'hospital_id','nome_hospital')}</td><td>${getName(state.lookups.medicos,a.medico_id,'medico_id','nome_medico')}</td><td>${getName(state.lookups.procedimentos,a.procedimento_id,'procedimento_id','nome_procedimento')}</td><td><span class="badge ${statusClass(a.status_id)}">${getName(state.lookups.status,a.status_id,'status_id','nome_status')}</span></td><td><div class="actions"><button class="btn" data-edit="${a.agendamento_id}">✏️</button><button class="btn btn-danger" data-del="${a.agendamento_id}">🗑️</button></div></td></tr>`).join('')}</tbody></table></div>`}
 
 function renderCalendar(){
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
+  const year = state.calendarYear;
+  const month = state.calendarMonth;
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
   const daysInMonth = lastDay.getDate();
@@ -103,7 +120,7 @@ function renderCalendar(){
   const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
   
-  let calendarHTML = '<div class="card" style="padding:20px;background:#0f1419;border:1px solid #1e2632"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><h3 style="margin:0">' + monthNames[month] + ' ' + year + '</h3><div style="display:flex;gap:12px;font-size:12px"><div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#22c55e;border-radius:3px"></div><span>Agendamento</span></div><div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#ef4444;border-radius:3px"></div><span>Bloqueado</span></div></div></div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">';
+  let calendarHTML = '<div class="card" style="padding:20px;background:#0f1419;border:1px solid #1e2632"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><div style="display:flex;gap:10px;align-items:center"><button id="prevMonth" class="btn" style="padding:6px 12px;font-size:14px">‹</button><h3 style="margin:0;width:200px;text-align:center">' + monthNames[month] + ' ' + year + '</h3><button id="nextMonth" class="btn" style="padding:6px 12px;font-size:14px">›</button></div><div style="display:flex;gap:12px;font-size:12px"><div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#22c55e;border-radius:3px"></div><span>Agendamento</span></div><div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#ef4444;border-radius:3px"></div><span>Bloqueado</span></div></div></div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">';
   
   // Days of week headers
   dayNames.forEach(day => {

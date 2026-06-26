@@ -1,6 +1,6 @@
-// URL do Web App do Google Apps Script
-export const API_URL = 'https://script.google.com/macros/s/AKfycbz-TbJwKmtuHy3MfstK9Nbs1vQ4SLR2eT6MfzUHUSc5urdL7q-7N07Fpas5WYM6mNG-/exec';
-
+// URL vazia = usar mock (dados de exemplo)
+export const API_URL = '';
+ 
 export const SHEETS = {
   organizations:'Organizations', 
   unidades:'Unidades', 

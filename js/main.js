@@ -1,4 +1,4 @@
-import { api, saveSession, getSession, clearSession } from './services/apiService.js';
+import { api, saveSession, getSession, clearSession, saveUnit, getUnit } from './services/apiService.js';
 import { toast } from './ui/toast.js';
 
 const app = document.getElementById('app');
@@ -9,10 +9,21 @@ const statusClass=s=> s==='ST004'?'b-red':s==='ST005'||s==='ST006'?'b-yellow':s=
 
 // ========== RESTORE SESSION ==========
 const session = getSession();
+const savedUnit = getUnit();
+
 if (session) {
   state.user = session.user;
   state.units = session.units;
-  renderUnits();
+  
+  if (savedUnit && state.units.some(u => u.unidade_id === savedUnit.unidade_id)) {
+    state.unit = savedUnit;
+    (async () => {
+      await loadBase();
+      renderShell('dashboard');
+    })();
+  } else {
+    renderUnits();
+  }
 } else {
   renderLogin();
 }
@@ -40,7 +51,7 @@ function toggleTheme(){document.documentElement.dataset.theme = document.documen
 function renderUnits(){
   app.innerHTML=`<main class="main"><div class="top"><div><h1 class="page-title">Seleção de unidade</h1><p class="page-sub">Escolha onde deseja trabalhar agora.</p></div><button class="btn" id="logout">Sair</button></div><div class="grid">${state.units.map(u=>`<div class="card unit-card" data-unit="${u.unidade_id}"><div style="display:flex;gap:14px;align-items:center"><div class="unit-icon">🏥</div><div><b>${u.nome_unidade}</b><p class="muted">${u.endereco}</p><span class="badge b-green">${u.online||0} usuários online</span></div></div><b>›</b></div>`).join('')}</div></main>`;
   document.getElementById('logout').onclick=()=>{clearSession(); renderLogin();};
-  document.querySelectorAll('[data-unit]').forEach(el=>el.onclick=async()=>{state.unit=state.units.find(u=>u.unidade_id===el.dataset.unit); await loadBase(); renderShell('dashboard');});
+  document.querySelectorAll('[data-unit]').forEach(el=>el.onclick=async()=>{state.unit=state.units.find(u=>u.unidade_id===el.dataset.unit); saveUnit(state.unit); await loadBase(); renderShell('dashboard');});
 }
 
 async function loadBase(){state.lookups=await api('getLookups',{org_id:state.user.org_id,unidade_id:state.unit.unidade_id}); state.appointments=(await api('getAppointments',{org_id:state.user.org_id,unidade_id:state.unit.unidade_id})).agendamentos; state.blocked=(await api('getBlockedDates',{org_id:state.user.org_id,unidade_id:state.unit.unidade_id})).bloqueios;}
@@ -49,7 +60,7 @@ function shellContent(page){return `<div class="shell"><aside class="sidebar"><d
   ${['dashboard:Dashboard','appointments:Agendamentos','new:Novo agendamento','blocked:Datas bloqueadas','settings:Configurações'].map(x=>{const [id,tx]=x.split(':');return `<button class="btn ${page===id?'active':''}" data-nav="${id}">${tx}</button>`}).join('')}
 </nav><button class="btn" id="backUnits" style="margin-top:18px">Trocar unidade</button></aside><main class="main"><div id="view"></div></main></div>`}
 
-function renderShell(page){app.innerHTML=shellContent(page); document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>renderShell(b.dataset.nav)); document.getElementById('backUnits').onclick=renderUnits; const view=document.getElementById('view'); if(page==='dashboard') view.innerHTML=dashboard(); if(page==='appointments') {view.innerHTML=appointments(); bindAppointments();} if(page==='new') {view.innerHTML=formAppointment(); bindForm();} if(page==='blocked') {view.innerHTML=blocked(); bindBlocked();} if(page==='settings') view.innerHTML=settings();}
+function renderShell(page){app.innerHTML=shellContent(page); document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>renderShell(b.dataset.nav)); document.getElementById('backUnits').onclick=()=>{state.unit=null; renderUnits();}; const view=document.getElementById('view'); if(page==='dashboard') view.innerHTML=dashboard(); if(page==='appointments') {view.innerHTML=appointments(); bindAppointments();} if(page==='new') {view.innerHTML=formAppointment(); bindForm();} if(page==='blocked') {view.innerHTML=blocked(); bindBlocked();} if(page==='settings') view.innerHTML=settings();}
 
 function dashboard(){const total=state.appointments.length, canc=state.appointments.filter(a=>a.status_id==='ST004').length, reag=state.appointments.filter(a=>a.reagendamento==='SIM').length; return `<div class="top"><div><h1 class="page-title">Dashboard de indicadores</h1><p class="page-sub">Visão geral da unidade selecionada.</p></div></div><div class="grid grid-4"><div class="card kpi"><div class="label">Total</div><div class="num">${total}</div></div><div class="card kpi"><div class="label">Realizados</div><div class="num">${state.appointments.filter(a=>a.status_id==='ST003').length}</div></div><div class="card kpi"><div class="label">Cancelados</div><div class="num status-bad">${canc}</div></div><div class="card kpi"><div class="label">Reagendados</div><div class="num status-alert">${reag}</div></div></div><div class="grid grid-2" style="margin-top:16px"><div class="card kpi"><h3>Agendamentos por status</h3><div class="donut"><div>${total}<br><span class="muted">Total</span></div></div></div><div class="card kpi"><h3>Agendamentos por hospital</h3><div class="chart-fake"><div class="bar" style="height:70%"></div><div class="bar" style="height:48%"></div><div class="bar" style="height:28%"></div><div class="bar" style="height:18%"></div></div></div></div>`}
 

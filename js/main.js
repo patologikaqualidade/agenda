@@ -103,29 +103,21 @@ function renderCalendar(){
   const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
   
-  let calendarHTML = `<div class="card" style="padding:20px;background:#0f1419;border:1px solid #1e2632">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <h3 style="margin:0">${monthNames[month]} ${year}</h3>
-      <div style="display:flex;gap:12px;font-size:12px">
-        <div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#22c55e;border-radius:3px"></div><span>Agendamento</span></div>
-        <div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#ef4444;border-radius:3px"></div><span>Bloqueado</span></div>
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">`;
+  let calendarHTML = '<div class="card" style="padding:20px;background:#0f1419;border:1px solid #1e2632"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><h3 style="margin:0">' + monthNames[month] + ' ' + year + '</h3><div style="display:flex;gap:12px;font-size:12px"><div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#22c55e;border-radius:3px"></div><span>Agendamento</span></div><div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#ef4444;border-radius:3px"></div><span>Bloqueado</span></div></div></div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">';
   
   // Days of week headers
   dayNames.forEach(day => {
-    calendarHTML += `<div style="text-align:center;padding:10px;font-weight:bold;font-size:12px;color:#9ca3af;border-bottom:1px solid #1e2632">${day}</div>`;
+    calendarHTML += '<div style="text-align:center;padding:10px;font-weight:bold;font-size:12px;color:#9ca3af;border-bottom:1px solid #1e2632">' + day + '</div>';
   });
   
   // Empty cells for days before month starts
   for (let i = 0; i < startingDayOfWeek; i++) {
-    calendarHTML += `<div style="padding:10px;background:#0a0d12;border:1px solid #1e2632"></div>`;
+    calendarHTML += '<div style="padding:10px;background:#0a0d12;border:1px solid #1e2632"></div>';
   }
   
   // Days of month
   for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = \`\${year}-\${String(month + 1).padStart(2, '0')}-\${String(day).padStart(2, '0')}\`;
+    const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
     const hasAppointment = state.appointments.some(a => a.data_agendamento === dateStr);
     const isBlocked = state.blocked.some(b => dateStr >= b.data_inicio && dateStr <= b.data_fim);
     
@@ -141,10 +133,11 @@ function renderCalendar(){
       borderColor = '#22c55e';
     }
     
-    calendarHTML += \`<div style="padding:10px;background:\${bgColor};border:1px solid \${borderColor};text-align:center;border-radius:4px;cursor:pointer;font-weight:500;color:\${textColor};\${isBlocked ? 'opacity:0.7;' : ''}font-size:13px">\${day}</div>\`;
+    const opacityStyle = isBlocked ? 'opacity:0.7;' : '';
+    calendarHTML += '<div style="padding:10px;background:' + bgColor + ';border:1px solid ' + borderColor + ';text-align:center;border-radius:4px;cursor:pointer;font-weight:500;color:' + textColor + ';' + opacityStyle + 'font-size:13px">' + day + '</div>';
   }
   
-  calendarHTML += `</div></div>`;
+  calendarHTML += '</div></div>';
   return calendarHTML;
 }
 

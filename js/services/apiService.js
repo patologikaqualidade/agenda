@@ -11,6 +11,21 @@ export async function api(action, payload = {}) {
   return data;
 }
 
+// ========== SESSÃO ==========
+export function saveSession(user, units) {
+  localStorage.setItem('session', JSON.stringify({ user, units, time: Date.now() }));
+}
+
+export function getSession() {
+  const session = localStorage.getItem('session');
+  return session ? JSON.parse(session) : null;
+}
+
+export function clearSession() {
+  localStorage.removeItem('session');
+}
+
+// ========== MOCK ==========
 const db = {
   user:{user_id:'USR001',org_id:'ORG001',nome:'João Silva',email:'admin@patologika.com.br',role:'admin'},
   units:[{unidade_id:'UNI001',org_id:'ORG001',nome_unidade:'Matriz - Centro',endereco:'Av. Principal, 123',online:12},{unidade_id:'UNI002',org_id:'ORG001',nome_unidade:'Unidade Hospital Primavera',endereco:'R. Primavera, 456',online:8}],

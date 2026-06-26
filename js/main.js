@@ -54,7 +54,16 @@ function renderUnits(){
   document.querySelectorAll('[data-unit]').forEach(el=>el.onclick=async()=>{state.unit=state.units.find(u=>u.unidade_id===el.dataset.unit); saveUnit(state.unit); await loadBase(); renderShell('dashboard');});
 }
 
-async function loadBase(){state.lookups=await api('getLookups',{org_id:state.user.org_id,unidade_id:state.unit.unidade_id}); state.appointments=(await api('getAppointments',{org_id:state.user.org_id,unidade_id:state.unit.unidade_id})).agendamentos; state.blocked=(await api('getBlockedDates',{org_id:state.user.org_id,unidade_id:state.unit.unidade_id})).bloqueios;}
+async function loadBase(){
+  const [lookupsRes, appointmentsRes, blockedRes] = await Promise.all([
+    api('getLookups',{org_id:state.user.org_id,unidade_id:state.unit.unidade_id}),
+    api('getAppointments',{org_id:state.user.org_id,unidade_id:state.unit.unidade_id}),
+    api('getBlockedDates',{org_id:state.user.org_id,unidade_id:state.unit.unidade_id})
+  ]);
+  state.lookups = lookupsRes;
+  state.appointments = appointmentsRes.agendamentos;
+  state.blocked = blockedRes.bloqueios;
+}
 
 function shellContent(page){return `<div class="shell"><aside class="sidebar"><div class="brand"><div class="brand-mark">S</div> SmartLink</div><div class="muted" style="margin-bottom:18px">${state.user.nome}<br>${state.unit.nome_unidade}</div><nav class="nav">
   ${['dashboard:Dashboard','appointments:Agendamentos','new:Novo agendamento','blocked:Datas bloqueadas','settings:Configurações'].map(x=>{const [id,tx]=x.split(':');return `<button class="btn ${page===id?'active':''}" data-nav="${id}">${tx}</button>`}).join('')}

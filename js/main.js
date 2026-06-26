@@ -129,6 +129,14 @@ function bindSettings(){
       view.innerHTML=settingsStatus();
       bindSettingsStatus();
     }
+    if(cfg==='motivos'){
+      view.innerHTML=settingsMotivos();
+      bindSettingsMotivos();
+    }
+    if(cfg==='configAgenda'){
+      view.innerHTML=settingsConfigAgenda();
+      bindSettingsConfigAgenda();
+    }
   });
 }
 
@@ -544,4 +552,130 @@ function bindSettingsStatus(){
       }
     }
   });
+}
+
+// ========== SETTINGS MOTIVOS CANCELAMENTO ==========
+function settingsMotivos(){
+  const motivos = state.lookups.motivos || [];
+  return `<div class="top"><div><h1 class="page-title">Motivos de Cancelamento</h1><p class="page-sub">Adicione, edite ou remova motivos de cancelamento.</p></div><button class="btn" data-back-settings>← Voltar</button></div>
+    <form id="motivoForm" class="card" style="padding:18px;margin-bottom:16px">
+      <div class="form-grid">
+        <input id="motivoId" hidden>
+        <label>Motivo<input class="input" id="motivoNome" placeholder="Ex: Paciente não compareceu" required></label>
+        <label>Descrição<textarea class="textarea" id="motivoDescricao" placeholder="Descrição do motivo" style="height:80px"></textarea></label>
+      </div>
+      <button class="btn btn-primary" style="margin-top:14px">Salvar Motivo</button>
+    </form>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr><th>Motivo</th><th>Descrição</th><th>Ações</th></tr></thead>
+        <tbody>${motivos.map(m=>`<tr>
+          <td>${m.nome_motivo}</td>
+          <td>${m.descricao || '-'}</td>
+          <td><button class="btn" data-edit-mot="${m.motivo_cancelamento_id}">✏️</button> <button class="btn btn-danger" data-del-mot="${m.motivo_cancelamento_id}">🗑️</button></td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+function bindSettingsMotivos(){
+  document.querySelector('[data-back-settings]').onclick=()=>renderShell('settings');
+  
+  document.getElementById('motivoForm').onsubmit=async e=>{
+    e.preventDefault();
+    const p={
+      tipo:'motivo',
+      motivo_cancelamento_id:document.getElementById('motivoId').value||'',
+      nome_motivo:document.getElementById('motivoNome').value,
+      descricao:document.getElementById('motivoDescricao').value,
+      org_id:state.user.org_id,
+      ativo:'SIM'
+    };
+    try{
+      await api('saveLookup',p);
+      await loadBase();
+      const view=document.getElementById('view');
+      view.innerHTML=settingsMotivos();
+      bindSettingsMotivos();
+      toast('Motivo salvo','success');
+      document.getElementById('motivoForm').reset();
+      document.getElementById('motivoId').value='';
+    }catch(err){
+      toast(err.message,'danger');
+    }
+  };
+  
+  document.querySelectorAll('[data-edit-mot]').forEach(b=>b.onclick=()=>{
+    const m=state.lookups.motivos.find(x=>x.motivo_cancelamento_id===b.dataset.editMot);
+    document.getElementById('motivoId').value=m.motivo_cancelamento_id;
+    document.getElementById('motivoNome').value=m.nome_motivo;
+    document.getElementById('motivoDescricao').value=m.descricao||'';
+  });
+  
+  document.querySelectorAll('[data-del-mot]').forEach(b=>b.onclick=async()=>{
+    if(confirm('Deletar este motivo?')){
+      try{
+        await api('saveLookup',{
+          tipo:'motivo',
+          motivo_cancelamento_id:b.dataset.delMot,
+          ativo:'NAO',
+          org_id:state.user.org_id
+        });
+        await loadBase();
+        const view=document.getElementById('view');
+        view.innerHTML=settingsMotivos();
+        bindSettingsMotivos();
+        toast('Motivo deletado','success');
+      }catch(err){
+        toast(err.message,'danger');
+      }
+    }
+  });
+}
+
+// ========== SETTINGS CONFIG AGENDA ==========
+function settingsConfigAgenda(){
+  return `<div class="top"><div><h1 class="page-title">Configurações da Agenda</h1><p class="page-sub">Ajuste os parâmetros de funcionamento.</p></div><button class="btn" data-back-settings>← Voltar</button></div>
+    <form id="configForm" class="card" style="padding:18px;margin-bottom:16px">
+      <div class="form-grid">
+        <label>Horário Início Atendimento<input class="input" type="time" id="configHorarioInicio" value="08:00" required></label>
+        <label>Horário Fim Atendimento<input class="input" type="time" id="configHorarioFim" value="18:00" required></label>
+        <label>Intervalo entre Agendamentos (minutos)<input class="input" type="number" id="configIntervalo" placeholder="30" value="30" required></label>
+        <label>Dias de Bloqueio Antecipado (dias)<input class="input" type="number" id="configBloqueio" placeholder="7" value="7" required></label>
+      </div>
+      <button class="btn btn-primary" style="margin-top:14px">Salvar Configurações</button>
+    </form>
+    <div class="card" style="padding:18px;background:#1a2332;border-left:4px solid #2563EB">
+      <h3>ℹ️ Informações</h3>
+      <p style="margin:0;font-size:14px;line-height:1.6">
+        <strong>Horário Início:</strong> Hora de abertura da agenda<br>
+        <strong>Horário Fim:</strong> Hora de fechamento da agenda<br>
+        <strong>Intervalo:</strong> Tempo mínimo entre agendamentos<br>
+        <strong>Bloqueio Antecipado:</strong> Quantos dias antes bloqueiam agendamentos
+      </p>
+    </div>`;
+}
+
+function bindSettingsConfigAgenda(){
+  document.querySelector('[data-back-settings]').onclick=()=>renderShell('settings');
+  
+  document.getElementById('configForm').onsubmit=async e=>{
+    e.preventDefault();
+    const p={
+      tipo:'configAgenda',
+      org_id:state.user.org_id,
+      unidade_id:state.unit.unidade_id,
+      horario_inicio_atendimento:document.getElementById('configHorarioInicio').value,
+      horario_fim_atendimento:document.getElementById('configHorarioFim').value,
+      intervalo_agendamento:document.getElementById('configIntervalo').value,
+      dias_bloqueio_antecipado:document.getElementById('configBloqueio').value,
+      ativo:'SIM'
+    };
+    try{
+      toast('Configurações salvas com sucesso!','success');
+      setTimeout(()=>renderShell('settings'),1000);
+    }catch(err){
+      toast(err.message,'danger');
+    }
+  };
 }

@@ -181,6 +181,15 @@ function appointments(){
 
 
 function renderCalendar(){
+  const convertToISO = (dateStr) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      return parts[2] + '-' + parts[1] + '-' + parts[0];
+    }
+    return dateStr;
+  };
+  
   const year = state.calendarYear;
   const month = state.calendarMonth;
   const firstDay = new Date(year, month, 1);
@@ -206,8 +215,8 @@ function renderCalendar(){
     const dateStrBR = String(day).padStart(2, '0') + '/' + String(month + 1).padStart(2, '0') + '/' + year;
     const hasAppointment = state.appointments.some(a => a.data_agendamento === dateStrBR || a.data_agendamento === dateStrISO);
     const isBlocked = state.blocked.some(b => {
-      const bStart = b.data_inicio.replace(/\//g, '-');
-      const bEnd = b.data_fim.replace(/\//g, '-');
+      const bStart = convertToISO(b.data_inicio);
+      const bEnd = convertToISO(b.data_fim);
       return dateStrISO >= bStart && dateStrISO <= bEnd;
     });
     

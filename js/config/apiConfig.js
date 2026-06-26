@@ -1,5 +1,5 @@
 // URL vazia = usar mock (dados de exemplo)
-export const API_URL = 'https://script.google.com/macros/s/AKfycbySHNjfPdlW29Y_f1HAnk8vixOl7ar56J9sXSK539PyxZMhtzVG1Yyr9-nfMBYZrm-O/exec';
+export const API_URL = 'https://script.google.com/macros/s/AKfycbwK1oqd4rSf3W_PMDcvjnczSHp3a1sv74lLJXJ1eowENiFN3tD71umqyvGVfrJrAPJC/exec';
  
 export const SHEETS = {
   organizations:'Organizations', 
